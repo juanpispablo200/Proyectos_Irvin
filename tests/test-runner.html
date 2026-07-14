@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BachesLoja – Test Runner</title>
+    <style>
+        /* ---- reset & base ---- */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 14px;
+            background: #F5F6F8;
+            color: #1C1F26;
+            padding: 24px;
+        }
+
+        /* ---- header ---- */
+        .runner-header {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 24px;
+        }
+        .runner-title { font-size: 22px; font-weight: 700; }
+        .runner-subtitle { font-size: 13px; color: #6B7280; margin-top: 2px; }
+
+        /* ---- summary bar ---- */
+        #summary {
+            display: flex; gap: 16px; flex-wrap: wrap;
+            background: #fff; border-radius: 10px;
+            padding: 16px 20px; margin-bottom: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08);
+        }
+        .summary-item { display: flex; flex-direction: column; align-items: center; }
+        .summary-num  { font-size: 26px; font-weight: 700; }
+        .summary-lbl  { font-size: 11px; color: #6B7280; text-transform: uppercase; letter-spacing:.5px; }
+        .num-pass  { color: #2F9E44; }
+        .num-fail  { color: #E8590C; }
+        .num-total { color: #1C1F26; }
+
+        /* ---- progress bar ---- */
+        #progress-wrap { height: 8px; background:#E5E7EB; border-radius:4px; margin-bottom:20px; overflow:hidden; }
+        #progress-bar  { height:100%; background:#2F9E44; width:0; transition:width .3s; }
+
+        /* ---- controls ---- */
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .btn {
+            padding: 8px 18px; border: none; border-radius: 6px;
+            cursor: pointer; font-size: 13px; font-weight: 600;
+        }
+        .btn-run  { background: #F2B705; color: #1C1F26; }
+        .btn-run:hover { background: #d9a504; }
+        .btn-filter { background: #fff; color: #374151; border: 1px solid #D1D5DB; }
+        .btn-filter.active { background: #1C1F26; color: #fff; }
+
+        /* ---- category ---- */
+        .category-block { margin-bottom: 16px; }
+        .category-title {
+            font-size: 13px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .5px; color: #6B7280; margin-bottom: 6px;
+            padding: 6px 0; border-bottom: 1px solid #E5E7EB;
+        }
+
+        /* ---- test card ---- */
+        .test-card {
+            background: #fff; border-radius: 8px;
+            border-left: 4px solid #E5E7EB;
+            padding: 12px 14px; margin-bottom: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+            cursor: pointer; transition: box-shadow .15s;
+        }
+        .test-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+        .test-card.pass  { border-left-color: #2F9E44; }
+        .test-card.fail  { border-left-color: #E8590C; }
+        .test-card.skip  { border-left-color: #9CA3AF; opacity: .6; }
+        .test-card.running { border-left-color: #F2B705; }
+
+        .test-header { display: flex; align-items: flex-start; gap: 8px; }
+        .test-icon   { font-size: 16px; flex-shrink: 0; line-height: 1.4; }
+        .test-name   { font-weight: 600; font-size: 13px; line-height: 1.4; }
+        .test-desc   { font-size: 12px; color: #6B7280; margin-top: 3px; line-height: 1.4; }
+        .test-time   { font-size: 11px; color: #9CA3AF; margin-top: 4px; }
+
+        .test-detail {
+            display: none; margin-top: 10px;
+            padding-top: 10px; border-top: 1px solid #F3F4F6;
+            font-size: 12px;
+        }
+        .test-card.open .test-detail { display: block; }
+
+        .error-msg  { color: #E8590C; font-weight: 600; margin-bottom: 8px; }
+        .result-box {
+            background: #F9FAFB; border-radius: 5px;
+            padding: 8px 10px; font-family: monospace;
+            font-size: 11px; white-space: pre-wrap; word-break: break-all;
+            max-height: 220px; overflow-y: auto;
+        }
+
+        /* ---- note box (manual checks) ---- */
+        .note-box {
+            background: #FFF9E6; border: 1px solid #F2B705;
+            border-radius: 8px; padding: 14px 18px; margin-bottom: 16px;
+            font-size: 13px;
+        }
+        .note-box h4 { font-size: 14px; margin-bottom: 8px; }
+        .note-box ul  { padding-left: 18px; line-height: 2; }
+
+        /* ---- spinner ---- */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid #F2B705; border-top-color: transparent;
+            border-radius: 50%; animation: spin .6s linear infinite;
+            vertical-align: middle; margin-right: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!--  HIDDEN APP IFRAME  – loads full BachesLoja app silently     -->
+<!-- ============================================================ -->
+<iframe id="app-frame" src="../index.html"
+        style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"
+        title="Hidden app frame for tests">
+</iframe>
+
+<div class="runner-header">
+    <div>
+        <div class="runner-title">▲ BachesLoja – Test Runner</div>
+        <div class="runner-subtitle">Task 17 · Comprehensive Testing &amp; Validation</div>
+    </div>
+</div>
+
+<div id="summary">
+    <div class="summary-item"><span class="summary-num num-total" id="s-total">—</span><span class="summary-lbl">Total</span></div>
+    <div class="summary-item"><span class="summary-num num-pass"  id="s-pass">—</span><span class="summary-lbl">Passed</span></div>
+    <div class="summary-item"><span class="summary-num num-fail"  id="s-fail">—</span><span class="summary-lbl">Failed</span></div>
+    <div class="summary-item"><span class="summary-num"           id="s-time" style="color:#6B7280">—</span><span class="summary-lbl">Duration</span></div>
+</div>
+
+<div id="progress-wrap"><div id="progress-bar"></div></div>
+
+<div class="controls">
+    <button class="btn btn-run" id="run-btn" onclick="Runner.run()">▶ Run All Tests</button>
+    <button class="btn btn-filter active" id="filter-all"  onclick="Runner.setFilter('all')">All</button>
+    <button class="btn btn-filter"        id="filter-fail" onclick="Runner.setFilter('fail')">Failed only</button>
+    <button class="btn btn-filter"        id="filter-pass" onclick="Runner.setFilter('pass')">Passed only</button>
+</div>
+
+<div id="results"></div>
+
+<!-- ============================================================ -->
+<!--  MANUAL-CHECK NOTES (responsive & screen-reader)            -->
+<!-- ============================================================ -->
+<div class="note-box" style="margin-top:24px;">
+    <h4>📋 Manual Testing Checklist</h4>
+    <p style="margin-bottom:8px; color:#6B7280; font-size:12px;">
+        The following checks require human verification or physical devices and cannot be automated in a browser test:
+    </p>
+    <ul>
+        <li><strong>Responsive – 320px</strong>: Open DevTools → toggle device toolbar → select iPhone SE → verify form is usable with no horizontal scroll.</li>
+        <li><strong>Responsive – 768px</strong>: Select iPad mini → confirm two-column layout activates where expected.</li>
+        <li><strong>Responsive – 1024px+</strong>: Switch to desktop width → confirm the municipal dashboard shows map + list side by side.</li>
+        <li><strong>Touch targets</strong>: On a real mobile device verify all buttons and selects are easily tappable (≥44px).</li>
+        <li><strong>Screen reader (NVDA / VoiceOver)</strong>: Tab through the citizen form → verify every field is announced with its label; submit form → verify priority result is announced via aria-live.</li>
+        <li><strong>Keyboard navigation</strong>: Use Tab/Shift-Tab to navigate the full form; press Space/Enter on each button; confirm visible focus ring is present at all times.</li>
+        <li><strong>High-contrast mode</strong>: Enable OS high-contrast → verify all text and UI elements remain distinguishable.</li>
+        <li><strong>Firefox</strong>: Open <code>index.html</code> in Firefox → run this test suite → verify 0 failures.</li>
+        <li><strong>Safari (macOS/iOS)</strong>: Open <code>index.html</code> in Safari → submit a test report → verify AI classification result appears.</li>
+        <li><strong>Print styles</strong>: Ctrl+P in the municipal view → verify the report table prints cleanly without broken layout.</li>
+    </ul>
+</div>
+
+<script>
+// =============================================================================
+//  Minimal test framework – mirrors the API expected by the test files
+// =============================================================================
+const testFramework = {
+    _tests: [],
+    _categories: [],
+    _currentCategory: null,
+
+    category(name) {
+        if (!this._categories.includes(name)) this._categories.push(name);
+        this._currentCategory = name;
+    },
+
+    test(category, name, description, fn) {
+        this._tests.push({ category, name, description, fn,
+                           status: 'pending', result: null, error: null, duration: 0 });
+    },
+
+    // ---- assertions ----
+    assert(condition, msg) {
+        if (!condition) throw new Error(msg || 'Assertion failed');
+    },
+    assertEqual(a, b, msg) {
+        if (a !== b) throw new Error(msg || `Expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
+    },
+    assertExists(val, msg) {
+        if (val === null || val === undefined)
+            throw new Error(msg || `Expected value to exist, got ${val}`);
+    }
+};
+
+// =============================================================================
+//  Runner
+// =============================================================================
+const Runner = {
+    filter: 'all',
+
+    async run() {
+        const btn = document.getElementById('run-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>Running…';
+
+        // Reset statuses
+        testFramework._tests.forEach(t => { t.status = 'pending'; t.result = null; t.error = null; t.duration = 0; });
+
+        this.renderAll();
+
+        let passed = 0, failed = 0;
+        const startAll = performance.now();
+
+        for (const test of testFramework._tests) {
+            this.markCard(test, 'running');
+            const t0 = performance.now();
+            try {
+                test.result = await test.fn();
+                test.status = 'pass';
+                passed++;
+            } catch (err) {
+                test.error  = err.message || String(err);
+                test.status = 'fail';
+                failed++;
+            }
+            test.duration = (performance.now() - t0).toFixed(1);
+            this.markCard(test, test.status);
+            this.updateSummary(passed, failed, testFramework._tests.length, performance.now() - startAll);
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '▶ Run All Tests';
+    },
+
+    markCard(test, status) {
+        const el = document.getElementById(this.cardId(test));
+        if (!el) return;
+        el.className = `test-card ${status}`;
+
+        const icon = el.querySelector('.test-icon');
+        if (icon) icon.textContent = status === 'pass' ? '✅' : status === 'fail' ? '❌' : status === 'running' ? '⏳' : '⬜';
+
+        const time = el.querySelector('.test-time');
+        if (time && test.duration) time.textContent = `${test.duration} ms`;
+
+        const detail = el.querySelector('.test-detail');
+        if (detail) {
+            if (status === 'fail' && test.error) {
+                detail.innerHTML = `<div class="error-msg">✗ ${escHtml(test.error)}</div>`;
+            } else if (status === 'pass' && test.result) {
+                detail.innerHTML = `<div class="result-box">${escHtml(JSON.stringify(test.result, null, 2))}</div>`;
+            } else {
+                detail.innerHTML = '';
+            }
+        }
+    },
+
+    updateSummary(passed, failed, total, ms) {
+        document.getElementById('s-total').textContent = total;
+        document.getElementById('s-pass').textContent  = passed;
+        document.getElementById('s-fail').textContent  = failed;
+        document.getElementById('s-time').textContent  = (ms / 1000).toFixed(2) + 's';
+        document.getElementById('progress-bar').style.width = (passed / total * 100) + '%';
+        document.getElementById('progress-bar').style.background = failed > 0 ? '#E8590C' : '#2F9E44';
+    },
+
+    renderAll() {
+        const root = document.getElementById('results');
+        root.innerHTML = '';
+        const groups = {};
+        testFramework._tests.forEach(t => {
+            (groups[t.category] = groups[t.category] || []).push(t);
+        });
+        Object.entries(groups).forEach(([cat, tests]) => {
+            const block = document.createElement('div');
+            block.className = 'category-block';
+            block.id = 'cat-' + slugify(cat);
+            block.innerHTML = `<div class="category-title">${escHtml(cat)}</div>`;
+            tests.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'test-card';
+                card.id = this.cardId(t);
+                card.innerHTML = `
+                    <div class="test-header">
+                        <span class="test-icon">⬜</span>
+                        <div>
+                            <div class="test-name">${escHtml(t.name)}</div>
+                            <div class="test-desc">${escHtml(t.description)}</div>
+                            <div class="test-time"></div>
+                        </div>
+                    </div>
+                    <div class="test-detail"></div>`;
+                card.addEventListener('click', () => card.classList.toggle('open'));
+                block.appendChild(card);
+            });
+            root.appendChild(block);
+        });
+    },
+
+    setFilter(f) {
+        this.filter = f;
+        document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+        document.getElementById('filter-' + f).classList.add('active');
+        document.querySelectorAll('.test-card').forEach(card => {
+            if (f === 'all') { card.style.display = ''; return; }
+            const show = (f === 'pass' && card.classList.contains('pass')) ||
+                         (f === 'fail' && card.classList.contains('fail'));
+            card.style.display = show ? '' : 'none';
+        });
+        // also hide empty category titles
+        document.querySelectorAll('.category-block').forEach(block => {
+            const visible = Array.from(block.querySelectorAll('.test-card'))
+                                 .some(c => c.style.display !== 'none');
+            block.style.display = visible ? '' : 'none';
+        });
+    },
+
+    cardId(t) { return 'tc-' + slugify(t.category + '-' + t.name); }
+};
+
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function slugify(s) {
+    return s.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+}
+</script>
+
+<!-- Load the full application into this page (same origin) so window.BachesLoja etc. are available -->
+<!-- Leaflet (needed for BachesLojaMap module) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" crossorigin=""></script>
+
+<!-- Supabase stub for test runner (no real network calls) -->
+<script>
+window.supabase = {
+    createClient: function(url, key) {
+        const stub = {
+            auth: {
+                getUser: async () => ({ data: { user: null }, error: null }),
+                signUp: async () => ({ data: { user: null }, error: null }),
+                signInWithPassword: async () => ({ data: { user: null }, error: null }),
+                signOut: async () => ({ error: null }),
+                onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+            },
+            from: function(table) {
+                const chain = {
+                    select: function() { return chain; },
+                    insert: function() { return chain; },
+                    update: function() { return chain; },
+                    eq: function() { return chain; },
+                    order: function() { return chain; },
+                    single: async function() { return { data: null, error: { message: 'stub' } }; },
+                    then: async function(cb) { return cb({ data: [], error: null }); }
+                };
+                // Make the chain itself awaitable
+                chain[Symbol.asyncIterator] = undefined;
+                chain.then = function(resolve) {
+                    return Promise.resolve({ data: [], error: null }).then(resolve);
+                };
+                return chain;
+            },
+            storage: {
+                from: function() {
+                    return {
+                        upload: async () => ({ error: null }),
+                        getPublicUrl: () => ({ data: { publicUrl: 'https://example.com/test.jpg' } })
+                    };
+                }
+            }
+        };
+        return stub;
+    }
+};
+</script>
+<script src="../scripts/supabase-client.js"></script>
+<script src="../scripts/app.js"></script>
+<script src="../scripts/ai-classifier.js"></script>
+<script src="../scripts/citizen-interface.js"></script>
+<script src="../scripts/municipal-dashboard.js"></script>
+<script src="../scripts/map.js"></script>
+
+<!-- Load test suites -->
+<script src="comprehensive-validation.test.js"></script>
+<script src="task-17-comprehensive.test.js"></script>
+<script src="task-27-leaflet-integration.test.js"></script>
+<script src="task-33-auth-uid.test.js"></script>
+<script src="task-34-mappers.test.js"></script>
+
+<script>
+// Auto-init app state (no real DOM needed for logic tests)
+document.addEventListener('DOMContentLoaded', () => {
+    // Provide stub DOM elements the app scripts check at startup to avoid throwing
+    const stubs = [
+        ['citizen-view', 'section'], ['municipal-view', 'section'],
+        ['report-form',  'form'],    ['description', 'textarea'],
+        ['neighborhood', 'select'],  ['photo-upload', 'input'],
+        ['use-location-btn', 'button'],
+        ['my-reports-list', 'div'],  ['reports-summary', 'div'],
+        ['neighborhood-map', 'div'], ['leaflet-map', 'div'],
+        ['reports-table-body', 'tbody']
+    ];
+    stubs.forEach(([id, tag]) => {
+        if (!document.getElementById(id)) {
+            const el = document.createElement(tag);
+            el.id = id;
+            // Give the leaflet-map stub enough size so Leaflet can initialize
+            if (id === 'leaflet-map') {
+                el.style.width  = '400px';
+                el.style.height = '420px';
+            } else {
+                el.style.display = 'none';
+            }
+            document.body.appendChild(el);
+        }
+    });
+
+    // Bootstrap app
+    if (window.BachesLoja && typeof window.BachesLoja.loadSampleData === 'function') {
+        window.BachesLoja.loadSampleData();
+    }
+
+    // Render the test UI then auto-run
+    Runner.renderAll();
+    Runner.run();
+});
+</script>
+</body>
+</html>

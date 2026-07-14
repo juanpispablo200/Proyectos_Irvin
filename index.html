@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="BachesLoja - Sistema inteligente de gestión y monitoreo de baches para Loja, Ecuador">
+    <meta name="theme-color" content="#F2B705">
+    <title>BachesLoja - Gestión Inteligente de Baches</title>
+    <!-- Favicon: triangular road-sign SVG (no external file needed) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpolygon points='16,2 30,28 2,28' fill='%23F2B705' stroke='%231C1F26' stroke-width='2' stroke-linejoin='round'/%3E%3Ctext x='16' y='24' text-anchor='middle' fill='%231C1F26' font-size='14' font-weight='bold' font-family='sans-serif'%3E!%3C/text%3E%3C/svg%3E">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="BachesLoja">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/citizen.css">
+    <link rel="stylesheet" href="styles/municipal.css">
+
+    <!-- Anti-FOUC: apply dark mode class before first paint (Task 38, Req 11.4) -->
+    <script>
+        (function() {
+            var stored = localStorage.getItem('bachesloja-dark-mode');
+            var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (stored === '1' || (stored === null && prefersDark)) {
+                document.documentElement.classList.add('dark-mode');
+            }
+        })();
+    </script>
+    <!-- Leaflet.js map library -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Leaflet MarkerCluster -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" crossorigin=""/>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen" aria-hidden="true">
+        <div class="loading-content">
+            <!-- Animated traffic cone SVG (Task 39) -->
+            <div class="loading-cone" aria-hidden="true">
+                <svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg" class="cone-svg" role="img" aria-label="Cono de tráfico animado">
+                    <!-- Shadow base -->
+                    <ellipse cx="40" cy="95" rx="24" ry="5" fill="rgba(0,0,0,0.35)" class="cone-shadow"/>
+                    <!-- Cone base rectangle -->
+                    <rect x="16" y="80" width="48" height="10" rx="3" fill="#E8590C"/>
+                    <!-- White stripe on base -->
+                    <rect x="16" y="84" width="48" height="3" rx="1" fill="#F5F6F8" opacity="0.85"/>
+                    <!-- Cone body -->
+                    <path d="M36,8 L64,80 L16,80 Z" fill="#F2B705"/>
+                    <!-- White reflective stripe 1 -->
+                    <path d="M37.5,28 L56.5,75 L54,75 L35.5,30 Z" fill="white" opacity="0.75"/>
+                    <!-- White reflective stripe 2 -->
+                    <path d="M36.8,18 L39.5,18 L60,72 L57.5,72 Z" fill="white" opacity="0.4"/>
+                    <!-- Cone tip highlight -->
+                    <circle cx="40" cy="10" r="3" fill="#FFD54F" opacity="0.7"/>
+                </svg>
+            </div>
+            <h2>BachesLoja</h2>
+            <p>Cargando sistema...</p>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="app-container" role="main">
+        
+        <!-- Navigation Header -->
+        <header class="app-header" role="banner">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="road-triangle logo-triangle" aria-hidden="true"></div>
+                    <h1 class="app-title">BachesLoja</h1>
+                </div>
+                
+                <nav class="view-switcher" role="navigation" aria-label="Cambiar vista">
+                    <button data-view="citizen" class="view-btn active" 
+                            aria-pressed="true" title="Vista Ciudadano">
+                        <span class="btn-icon" aria-hidden="true">👤</span>
+                        Ciudadano
+                    </button>
+                    <button data-view="municipal" class="view-btn" 
+                            aria-pressed="false" title="Panel Municipal">
+                        <span class="btn-icon" aria-hidden="true">🏛️</span>
+                        Municipal
+                    </button>
+                </nav>
+
+                <!-- Dark Mode Toggle — Task 38 -->
+                <button id="dark-mode-toggle"
+                        class="dark-mode-toggle"
+                        aria-label="Activar modo oscuro"
+                        title="Alternar modo oscuro/claro"
+                        onclick="window.BachesLoja.toggleDarkMode()">
+                    <span aria-hidden="true" id="dark-mode-icon">🌙</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Landing View — Role Selection -->
+        <section id="landing-view" class="landing-view" role="region" aria-label="Selección de rol">
+
+            <!-- Inline SVG hero: dark asphalt road with pothole -->
+            <div class="landing-hero" aria-hidden="true">
+                <svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg" class="landing-road-svg" role="img" aria-label="Ilustración de carretera con bache">
+                    <!-- Sky / background -->
+                    <rect x="0" y="0" width="800" height="220" fill="#14161C"/>
+
+                    <!-- Road surface -->
+                    <rect x="0" y="70" width="800" height="110" fill="#1C1F26"/>
+
+                    <!-- Road texture — subtle grain lines -->
+                    <line x1="0" y1="88"  x2="800" y2="88"  stroke="#22262F" stroke-width="1" opacity="0.6"/>
+                    <line x1="0" y1="110" x2="800" y2="110" stroke="#22262F" stroke-width="1" opacity="0.4"/>
+                    <line x1="0" y1="150" x2="800" y2="150" stroke="#22262F" stroke-width="1" opacity="0.4"/>
+                    <line x1="0" y1="168" x2="800" y2="168" stroke="#22262F" stroke-width="1" opacity="0.6"/>
+
+                    <!-- Left shoulder line (solid yellow) -->
+                    <rect x="0" y="72" width="800" height="5" fill="#F2B705" opacity="0.85"/>
+                    <!-- Right shoulder line (solid yellow) -->
+                    <rect x="0" y="173" width="800" height="5" fill="#F2B705" opacity="0.85"/>
+
+                    <!-- Centre dashed lane markings (white) -->
+                    <rect x="0"   y="120" width="90" height="7" rx="2" fill="#FFFFFF" opacity="0.9"/>
+                    <rect x="130" y="120" width="90" height="7" rx="2" fill="#FFFFFF" opacity="0.9"/>
+                    <rect x="260" y="120" width="90" height="7" rx="2" fill="#FFFFFF" opacity="0.9"/>
+                    <!-- Gap for pothole area -->
+                    <rect x="500" y="120" width="90" height="7" rx="2" fill="#FFFFFF" opacity="0.9"/>
+                    <rect x="630" y="120" width="90" height="7" rx="2" fill="#FFFFFF" opacity="0.9"/>
+                    <rect x="720" y="120" width="90" height="7" rx="2" fill="#FFFFFF" opacity="0.9"/>
+
+                    <!-- Pothole shadow / depth -->
+                    <ellipse cx="395" cy="130" rx="34" ry="17" fill="#0A0C10" opacity="0.7"/>
+                    <!-- Pothole main shape — irregular outline using F2B705 -->
+                    <path d="M365,122 Q370,110 385,112 Q392,108 402,111 Q416,107 425,115 Q432,112 435,120 Q438,130 430,138 Q422,145 410,143 Q400,148 388,145 Q374,146 366,138 Q360,130 365,122 Z"
+                          fill="#111418" stroke="#F2B705" stroke-width="2.5"/>
+                    <!-- Inner pothole depth -->
+                    <ellipse cx="400" cy="129" rx="22" ry="11" fill="#0D0F13"/>
+                    <!-- Pothole highlight edge -->
+                    <path d="M378,120 Q385,114 398,116 Q410,112 420,119"
+                          fill="none" stroke="#F2B705" stroke-width="1.5" opacity="0.5" stroke-linecap="round"/>
+
+                    <!-- Cracked asphalt lines radiating from pothole -->
+                    <line x1="400" y1="112" x2="394" y2="100" stroke="#F2B705" stroke-width="1" opacity="0.35" stroke-linecap="round"/>
+                    <line x1="420" y1="118" x2="436" y2="109" stroke="#F2B705" stroke-width="1" opacity="0.35" stroke-linecap="round"/>
+                    <line x1="435" y1="132" x2="450" y2="128" stroke="#F2B705" stroke-width="1" opacity="0.35" stroke-linecap="round"/>
+                    <line x1="365" y1="128" x2="350" y2="122" stroke="#F2B705" stroke-width="1" opacity="0.35" stroke-linecap="round"/>
+                    <line x1="370" y1="140" x2="358" y2="148" stroke="#F2B705" stroke-width="1" opacity="0.35" stroke-linecap="round"/>
+                    <line x1="425" y1="142" x2="436" y2="150" stroke="#F2B705" stroke-width="1" opacity="0.35" stroke-linecap="round"/>
+
+                    <!-- Warning triangle sign (left) -->
+                    <polygon points="80,52 100,20 120,52" fill="#F2B705" stroke="#1C1F26" stroke-width="2"/>
+                    <text x="100" y="46" text-anchor="middle" fill="#1C1F26" font-size="14" font-weight="bold" font-family="sans-serif">!</text>
+                    <rect x="97" y="52" width="6" height="14" fill="#888" rx="1"/>
+
+                    <!-- Warning triangle sign (right) -->
+                    <polygon points="680,52 700,20 720,52" fill="#F2B705" stroke="#1C1F26" stroke-width="2"/>
+                    <text x="700" y="46" text-anchor="middle" fill="#1C1F26" font-size="14" font-weight="bold" font-family="sans-serif">!</text>
+                    <rect x="697" y="52" width="6" height="14" fill="#888" rx="1"/>
+
+                    <!-- Road horizon fade -->
+                    <rect x="0" y="0" width="800" height="72" fill="url(#skyGrad)"/>
+                    <defs>
+                        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#0E1014"/>
+                            <stop offset="100%" stop-color="#14161C"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+
+            <!-- Branding subtitle -->
+            <div class="landing-brand">
+                <div class="road-triangle" aria-hidden="true"></div>
+                <h1 class="landing-title">BachesLoja</h1>
+                <p class="landing-subtitle">Sistema inteligente de gestión de baches · Loja, Ecuador</p>
+            </div>
+
+            <!-- Role selection cards -->
+            <div class="landing-cards" role="group" aria-label="Selecciona tu rol">
+
+                <button class="landing-card landing-card--ciudadano"
+                        id="btn-role-ciudadano"
+                        aria-label="Ingresar como ciudadano"
+                        onclick="window.BachesLoja.showAuthModal('ciudadano')">
+                    <!-- Traffic sign icon: person / citizen -->
+                    <span class="landing-card__icon" aria-hidden="true">
+                        <svg viewBox="0 0 56 64" xmlns="http://www.w3.org/2000/svg" width="52" height="60">
+                            <!-- Triangle frame -->
+                            <polygon points="28,4 54,52 2,52" fill="#1C1F26" stroke="#1C1F26" stroke-width="2" stroke-linejoin="round"/>
+                            <!-- Person silhouette -->
+                            <circle cx="28" cy="22" r="5" fill="#F2B705"/>
+                            <path d="M18,42 Q18,30 28,30 Q38,30 38,42 Z" fill="#F2B705"/>
+                            <!-- Sign post -->
+                            <rect x="26" y="52" width="4" height="10" fill="#888" rx="1"/>
+                        </svg>
+                    </span>
+                    <span class="landing-card__title">Soy ciudadano</span>
+                    <span class="landing-card__desc">Reporta baches en tu barrio</span>
+                </button>
+
+                <button class="landing-card landing-card--municipal"
+                        id="btn-role-admin"
+                        aria-label="Ingresar como funcionario municipal"
+                        onclick="window.BachesLoja.showAuthModal('admin')">
+                    <!-- Traffic sign icon: dashboard / bar chart -->
+                    <span class="landing-card__icon" aria-hidden="true">
+                        <svg viewBox="0 0 56 64" xmlns="http://www.w3.org/2000/svg" width="52" height="60">
+                            <!-- Triangle frame -->
+                            <polygon points="28,4 54,52 2,52" fill="#F2B705" stroke="#F2B705" stroke-width="2" stroke-linejoin="round"/>
+                            <!-- Bar chart bars -->
+                            <rect x="16" y="40" width="6" height="8"  fill="#1C1F26" rx="1"/>
+                            <rect x="25" y="32" width="6" height="16" fill="#1C1F26" rx="1"/>
+                            <rect x="34" y="36" width="6" height="12" fill="#1C1F26" rx="1"/>
+                            <!-- Sign post -->
+                            <rect x="26" y="52" width="4" height="10" fill="#888" rx="1"/>
+                        </svg>
+                    </span>
+                    <span class="landing-card__title">Soy funcionario municipal</span>
+                    <span class="landing-card__desc">Gestiona y prioriza reportes</span>
+                </button>
+
+            </div>
+        </section>
+
+        <!-- Citizen Interface -->
+        <section id="citizen-view" class="interface-section" 
+                 role="region" aria-label="Interfaz de ciudadano">
+            
+            <!-- Citizen header with logout -->
+            <div class="view-header">
+                <div class="view-header__info">
+                    <h2 class="view-header__title">Interfaz Ciudadana</h2>
+                </div>
+                <button id="citizen-logout-btn"
+                        class="logout-btn"
+                        aria-label="Cerrar sesión"
+                        onclick="window.BachesLoja.handleLogout()">
+                    <span aria-hidden="true">🚪</span>
+                    Cerrar sesión
+                </button>
+            </div>
+            
+            <!-- Report Form Section -->
+            <div class="report-form-container">
+                <div class="section-header">
+                    <h2>Reportar Bache</h2>
+                    <p>Ayuda a mejorar las vías de Loja reportando baches</p>
+                </div>
+
+                <form id="report-form" class="report-form" novalidate>
+                    <!-- Description Field -->
+                    <div class="form-group">
+                        <label for="description" class="form-label">
+                            Descripción del Bache *
+                        </label>
+                        <textarea id="description" name="description" 
+                                class="form-textarea" 
+                                placeholder="Describe el bache: tamaño, ubicación específica, riesgos observados..."
+                                rows="4" required aria-describedby="description-help"></textarea>
+                        <small id="description-help" class="form-help">
+                            Incluye detalles como tamaño y condiciones del bache
+                        </small>
+                        <div class="form-error" id="description-error" aria-live="polite"></div>
+                    </div>
+
+                    <!-- Photo Upload -->
+                    <div class="form-group">
+                        <label for="photo-upload" class="form-label">
+                            Fotografía
+                        </label>
+                        <div class="photo-upload-container">
+                            <input type="file" id="photo-upload" name="photo" 
+                                   accept="image/jpeg,image/jpg,image/png" 
+                                   class="photo-input" aria-describedby="photo-help">
+                            <label for="photo-upload" class="photo-upload-label">
+                                <span class="upload-icon" aria-hidden="true">📸</span>
+                                <span class="upload-text">Tomar o seleccionar foto</span>
+                            </label>
+                            <div id="photo-preview" class="photo-preview" aria-hidden="true"></div>
+                        </div>
+                        <small id="photo-help" class="form-help">
+                            Opcional. Máximo 10MB, formatos JPEG/PNG
+                        </small>
+                        <div class="form-error" id="photo-error" aria-live="polite"></div>
+                    </div>
+
+                    <!-- Location Selection -->
+                    <div class="form-group">
+                        <label for="neighborhood" class="form-label">
+                            Ubicación *
+                        </label>
+                        <div class="location-container">
+                            <select id="neighborhood" name="neighborhood" 
+                                    class="form-select" required aria-describedby="location-help">
+                                <option value="">Selecciona tu barrio</option>
+                                <option value="Centro Histórico">Centro Histórico</option>
+                                <option value="Sucre">Sucre</option>
+                                <option value="El Valle">El Valle</option>
+                                <option value="San Sebastián">San Sebastián</option>
+                                <option value="Punzara">Punzara</option>
+                                <option value="Zamora Huayco">Zamora Huayco</option>
+                                <option value="Carigán">Carigán</option>
+                                <option value="Yahuarcuna">Yahuarcuna</option>
+                                <option value="La Argelia">La Argelia</option>
+                                <option value="San Cayetano">San Cayetano</option>
+                            </select>
+                            <button type="button" id="use-location-btn" class="location-btn" 
+                                    title="Usar mi ubicación actual">
+                                <span class="btn-icon" aria-hidden="true">📍</span>
+                                Usar mi ubicación
+                            </button>
+                        </div>
+                        <!-- Manual location picker toggle button -->
+                        <button type="button" id="toggle-location-map-btn" class="location-btn" 
+                                style="margin-top: 8px;"
+                                title="Seleccionar ubicación en el mapa">
+                            <span class="btn-icon" aria-hidden="true">🗺️</span>
+                            Seleccionar en mapa
+                        </button>
+
+                        <!-- Mini location picker map (hidden by default) -->
+                        <div id="location-picker-map" 
+                             style="height: 250px; margin-top: 10px; border-radius: 10px; border: 2px solid #F2B705; display: none; z-index: 0;"
+                             aria-label="Mapa para seleccionar la ubicación del bache"
+                             role="application"></div>
+                        <p id="location-picker-hint" 
+                           style="display:none; font-size:12px; color:#6B7280; margin-top:4px;">
+                            Haz clic en el mapa para marcar la ubicación del bache, o arrastra el pin.
+                        </p>
+                        <small id="location-help" class="form-help">
+                            Selecciona el barrio donde está el bache
+                        </small>
+                        <div class="form-error" id="location-error" aria-live="polite"></div>
+                    </div>
+
+                    <!-- Road Type -->
+                    <div class="form-group">
+                        <fieldset class="road-type-fieldset">
+                            <legend class="form-label">Tipo de Vía *</legend>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" id="road-principal" name="roadType" 
+                                           value="Principal" class="radio-input" required>
+                                    <label for="road-principal" class="radio-label">
+                                        Principal
+                                        <small>Avenidas y calles principales</small>
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" id="road-secundaria" name="roadType" 
+                                           value="Secundaria" class="radio-input" required>
+                                    <label for="road-secundaria" class="radio-label">
+                                        Secundaria
+                                        <small>Calles de barrio importantes</small>
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" id="road-vecinal" name="roadType" 
+                                           value="Vecinal" class="radio-input" required>
+                                    <label for="road-vecinal" class="radio-label">
+                                        Vecinal
+                                        <small>Calles locales y residenciales</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <div class="form-error" id="roadtype-error" aria-live="polite"></div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="form-actions">
+                        <!-- AI Classification Cone Loader (shown during AI processing) -->
+                        <div class="ai-cone-loader" id="ai-cone-loader" aria-live="polite" aria-label="Clasificando con inteligencia artificial">
+                            <svg class="ai-cone-loader__cone" viewBox="0 0 56 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <!-- Cone body -->
+                                <polygon points="28,4 50,58 6,58" fill="#E8590C"/>
+                                <!-- White stripe 1 -->
+                                <polygon points="20.5,30 35.5,30 38.5,38 17.5,38" fill="#FFFFFF" opacity="0.9"/>
+                                <!-- White stripe 2 -->
+                                <polygon points="14,48 42,48 44.5,54 11.5,54" fill="#FFFFFF" opacity="0.9"/>
+                                <!-- Base -->
+                                <rect x="4" y="58" width="48" height="6" rx="2" fill="#1C1F26"/>
+                            </svg>
+                            <span class="ai-cone-loader__label">Clasificando con IA…</span>
+                        </div>
+
+                        <button type="submit" id="submit-report-btn" class="submit-btn">
+                            <span class="btn-text">Enviar Reporte</span>
+                            <span class="btn-loader" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Classification Result -->
+                <div id="classification-result" class="classification-result" 
+                     aria-live="polite" aria-hidden="true">
+                    <div class="result-header">
+                        <div class="priority-indicator">
+                            <div class="priority-triangle"></div>
+                            <span class="priority-text"></span>
+                        </div>
+                        <h3>Clasificación IA Completada</h3>
+                    </div>
+                    <div class="result-content">
+                        <p class="result-summary"></p>
+                        <div class="reasoning-section">
+                            <h4>Criterios Detectados:</h4>
+                            <ul class="reasoning-list"></ul>
+                        </div>
+                    </div>
+                    <button class="result-close-btn" title="Cerrar resultado">
+                        <span aria-hidden="true">×</span>
+                        <span class="sr-only">Cerrar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- My Reports Section -->
+            <div class="my-reports-section">
+                <div class="section-header">
+                    <h2>Mis Reportes</h2>
+                    <div class="reports-summary" id="reports-summary"></div>
+                </div>
+                <div id="my-reports-list" class="reports-list"></div>
+            </div>
+        </section>
+
+        <!-- Municipal Dashboard -->
+        <section id="municipal-view" class="interface-section"
+                 role="region" aria-label="Panel municipal">
+            
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <div>
+                    <h2>Panel Municipal</h2>
+                    <p>Gestión y monitoreo de reportes de baches en Loja</p>
+                </div>
+                <button id="municipal-logout-btn"
+                        class="logout-btn"
+                        aria-label="Cerrar sesión del panel municipal"
+                        onclick="window.BachesLoja.handleLogout()">
+                    <span aria-hidden="true">🚪</span>
+                    Cerrar sesión
+                </button>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid" role="region" aria-label="Estadísticas generales">
+                <div class="stat-card">
+                    <div class="stat-icon" aria-hidden="true">📊</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="total-reports">0</div>
+                        <div class="stat-label">Total Reportes</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card high-priority">
+                    <div class="stat-icon" aria-hidden="true">⚠️</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="high-priority-reports">0</div>
+                        <div class="stat-label">Alta Prioridad</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card in-progress">
+                    <div class="stat-icon" aria-hidden="true">🔧</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="in-progress-reports">0</div>
+                        <div class="stat-label">En Proceso</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card resolved">
+                    <div class="stat-icon" aria-hidden="true">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="resolved-reports">0</div>
+                        <div class="stat-label">Resueltos</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card response-time">
+                    <div class="stat-icon" aria-hidden="true">⏱️</div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="avg-response-time">0</div>
+                        <div class="stat-label">Tiempo Promedio</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters and Controls -->
+            <div class="dashboard-controls">
+                <div class="filters-section" role="region" aria-label="Filtros de reportes">
+                    <div class="filter-group">
+                        <label for="priority-filter" class="filter-label">Prioridad</label>
+                        <select id="priority-filter" class="filter-select">
+                            <option value="">Todas las prioridades</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Media">Media</option>
+                            <option value="Baja">Baja</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="status-filter" class="filter-label">Estado</label>
+                        <select id="status-filter" class="filter-select">
+                            <option value="">Todos los estados</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="En proceso">En proceso</option>
+                            <option value="Resuelto">Resuelto</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="zone-filter" class="filter-label">Zona</label>
+                        <select id="zone-filter" class="filter-select">
+                            <option value="">Todas las zonas</option>
+                            <option value="Centro Histórico">Centro Histórico</option>
+                            <option value="Sucre">Sucre</option>
+                            <option value="El Valle">El Valle</option>
+                            <option value="San Sebastián">San Sebastián</option>
+                            <option value="Punzara">Punzara</option>
+                            <option value="Zamora Huayco">Zamora Huayco</option>
+                            <option value="Carigán">Carigán</option>
+                            <option value="Yahuarcuna">Yahuarcuna</option>
+                            <option value="La Argelia">La Argelia</option>
+                            <option value="San Cayetano">San Cayetano</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="date-from-filter" class="filter-label">Desde</label>
+                        <input type="date" id="date-from-filter" class="filter-select">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="date-to-filter" class="filter-label">Hasta</label>
+                        <input type="date" id="date-to-filter" class="filter-select">
+                    </div>
+                    
+                    <button id="clear-filters-btn" class="clear-filters-btn" 
+                            title="Limpiar todos los filtros">
+                        Limpiar Filtros
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Content -->
+            <div class="dashboard-main">
+                <!-- Schematic Map -->
+                <div class="map-section" role="region" aria-label="Mapa de reportes">
+                    <h3>Mapa de Reportes por Zona</h3>
+                    <div id="leaflet-map" class="neighborhood-map" style="height: 420px; border-radius: 12px; z-index: 0;"></div>
+                </div>
+
+                <!-- Reports List -->
+                <div class="reports-section" role="region" aria-label="Lista de reportes">
+                    <div class="reports-header">
+                        <h3>Lista de Reportes</h3>
+                        <div class="list-controls">
+                            <button id="refresh-reports-btn" class="control-btn" 
+                                    title="Actualizar lista">
+                                <span aria-hidden="true">🔄</span>
+                                Actualizar
+                            </button>
+                            <button id="export-csv-btn" class="action-btn secondary-btn" 
+                                    aria-label="Exportar reportes a CSV">
+                                <span aria-hidden="true">📥</span> Exportar CSV
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="reports-table-container" class="reports-table-container">
+                        <table id="reports-table" class="reports-table" role="table">
+                            <thead role="rowgroup">
+                                <tr role="row">
+                                    <th role="columnheader">Foto</th>
+                                    <th role="columnheader">Zona</th>
+                                    <th role="columnheader">Prioridad</th>
+                                    <th role="columnheader">Estado</th>
+                                    <th role="columnheader">Fecha</th>
+                                    <th role="columnheader">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reports-table-body" role="rowgroup">
+                                <!-- Reports will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                        
+                        <div id="empty-reports-state" class="empty-state municipal-empty-state" aria-hidden="true">
+                            <!-- Traffic cone icon -->
+                            <div class="municipal-empty-icon" aria-hidden="true">
+                                <svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg" width="56" height="70">
+                                    <ellipse cx="40" cy="95" rx="22" ry="4" fill="rgba(0,0,0,0.15)"/>
+                                    <rect x="16" y="80" width="48" height="10" rx="3" fill="#E8590C"/>
+                                    <rect x="16" y="84" width="48" height="3" rx="1" fill="#F5F6F8" opacity="0.85"/>
+                                    <path d="M36,8 L64,80 L16,80 Z" fill="#F2B705"/>
+                                    <path d="M37.5,28 L56.5,75 L54,75 L35.5,30 Z" fill="white" opacity="0.75"/>
+                                </svg>
+                            </div>
+                            <h4>No hay reportes con estos filtros</h4>
+                            <p>Intenta cambiar los criterios de búsqueda.</p>
+                            <button class="empty-state-cta" onclick="window.MunicipalDashboard.clearAllFilters()">
+                                Limpiar filtros
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal auth-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="auth-modal-title">
+        <div class="modal-backdrop" aria-hidden="true" onclick="window.BachesLoja.hideAuthModal()"></div>
+        <div class="modal-content auth-modal__content">
+            <div class="modal-header auth-modal__header">
+                <div class="auth-modal__logo" aria-hidden="true">
+                    <div class="road-triangle"></div>
+                </div>
+                <h3 class="modal-title" id="auth-modal-title">Iniciar sesión</h3>
+                <button class="modal-close-btn" aria-label="Cerrar modal de autenticación"
+                        onclick="window.BachesLoja.hideAuthModal()">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+
+            <!-- Mode toggle tabs -->
+            <div class="auth-modal__tabs" role="tablist" aria-label="Modo de autenticación">
+                <button id="auth-tab-login" class="auth-modal__tab auth-modal__tab--active"
+                        role="tab" aria-selected="true" aria-controls="auth-form-panel"
+                        onclick="window.BachesLoja.switchAuthMode('login')">
+                    Iniciar sesión
+                </button>
+                <button id="auth-tab-register" class="auth-modal__tab"
+                        role="tab" aria-selected="false" aria-controls="auth-form-panel"
+                        onclick="window.BachesLoja.switchAuthMode('register')">
+                    Registrarse
+                </button>
+            </div>
+
+            <div class="modal-body auth-modal__body" id="auth-modal-body">
+                <form id="auth-form" class="auth-form" novalidate
+                      onsubmit="window.BachesLoja.handleAuthSubmit(event)">
+
+                    <!-- Inline error area -->
+                    <div id="auth-error" class="auth-form__error" role="alert" aria-live="assertive" hidden></div>
+
+                    <!-- Name field (register only) -->
+                    <div class="form-group auth-form__group" id="auth-name-group" hidden>
+                        <label for="auth-name" class="form-label">
+                            Nombre completo
+                        </label>
+                        <input type="text" id="auth-name" name="nombre"
+                               class="form-input auth-form__input"
+                               placeholder="Tu nombre"
+                               autocomplete="name"
+                               aria-describedby="auth-name-hint"/>
+                        <small id="auth-name-hint" class="form-help">
+                            Se mostrará en tus reportes
+                        </small>
+                    </div>
+
+                    <!-- Email field -->
+                    <div class="form-group auth-form__group">
+                        <label for="auth-email" class="form-label">
+                            Correo electrónico <span aria-hidden="true">*</span>
+                        </label>
+                        <input type="email" id="auth-email" name="email"
+                               class="form-input auth-form__input"
+                               placeholder="tu@correo.com"
+                               autocomplete="email"
+                               required
+                               aria-required="true"/>
+                    </div>
+
+                    <!-- Password field -->
+                    <div class="form-group auth-form__group">
+                        <label for="auth-password" class="form-label">
+                            Contraseña <span aria-hidden="true">*</span>
+                        </label>
+                        <div class="auth-form__password-wrapper">
+                            <input type="password" id="auth-password" name="password"
+                                   class="form-input auth-form__input"
+                                   placeholder="Mínimo 6 caracteres"
+                                   autocomplete="current-password"
+                                   required
+                                   aria-required="true"
+                                   minlength="6"/>
+                            <button type="button" class="auth-form__toggle-pwd"
+                                    aria-label="Mostrar u ocultar contraseña"
+                                    onclick="window.BachesLoja.togglePasswordVisibility()">
+                                <span aria-hidden="true" id="auth-pwd-eye">👁</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Submit button -->
+                    <div class="auth-form__actions">
+                        <button type="submit" id="auth-submit-btn" class="submit-btn auth-form__submit">
+                            <span class="btn-text" id="auth-submit-label">Iniciar sesión</span>
+                            <span class="btn-loader" aria-hidden="true" id="auth-loader" hidden></span>
+                        </button>
+                    </div>
+
+                    <!-- Footer toggle hint -->
+                    <p class="auth-form__footer" id="auth-footer-hint">
+                        ¿No tienes cuenta?
+                        <button type="button" class="auth-form__link"
+                                onclick="window.BachesLoja.switchAuthMode('register')">
+                            Regístrate aquí
+                        </button>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Details Modal -->
+    <div id="report-modal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-backdrop" aria-hidden="true"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Detalles del Reporte</h3>
+                <button class="modal-close-btn" aria-label="Cerrar modal">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Modal content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true">
+        <!-- Toast notifications will be added here by JavaScript -->
+    </div>
+
+    <!-- Scripts -->
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLs=" crossorigin=""></script>
+    <!-- Leaflet MarkerCluster -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" crossorigin=""></script>
+    <!-- Supabase JS client (CDN, versión fija) — debe cargarse antes que supabase-client.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <!-- Inicialización del cliente Supabase y exposición de window.SupabaseDB -->
+    <script src="scripts/supabase-client.js"></script>
+    <script src="scripts/app.js"></script>
+    <script src="scripts/ai-classifier.js"></script>
+    <script src="scripts/citizen-interface.js"></script>
+    <script src="scripts/municipal-dashboard.js"></script>
+    <script src="scripts/map.js"></script>
+    <script src="scripts/accessibility.js"></script>
+    
+    <script>
+        // Remove the old initialization since app.js now initializes itself
+    </script>
+</body>
+</html>

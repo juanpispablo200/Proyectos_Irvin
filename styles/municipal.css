@@ -1,0 +1,1055 @@
+/* BachesLoja - Municipal Dashboard Styles */
+
+/* Dashboard Header */
+.dashboard-header {
+  text-align: center;
+  margin-bottom: var(--space-2xl);
+  padding: var(--space-xl) var(--space-md);
+  background: linear-gradient(135deg, var(--color-asphalt) 0%, #2A2F38 100%);
+  color: var(--color-white);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.dashboard-header h2 {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-road-yellow);
+  margin-bottom: var(--space-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+}
+
+.dashboard-header h2::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-bottom: 32px solid var(--color-road-yellow);
+}
+
+.dashboard-header p {
+  font-size: 1.125rem;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Statistics Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+
+.stat-card {
+  background-color: var(--color-white);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-md);
+  border-left: 4px solid var(--color-road-yellow);
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(45deg, transparent 50%, rgba(242, 183, 5, 0.1) 50%);
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.stat-card.high-priority {
+  border-left-color: var(--priority-alta);
+}
+
+.stat-card.high-priority::before {
+  background: linear-gradient(45deg, transparent 50%, rgba(232, 89, 12, 0.1) 50%);
+}
+
+.stat-card.in-progress {
+  border-left-color: var(--status-proceso);
+}
+
+.stat-card.in-progress::before {
+  background: linear-gradient(45deg, transparent 50%, rgba(0, 102, 204, 0.1) 50%);
+}
+
+.stat-card.resolved {
+  border-left-color: var(--status-resuelto);
+}
+
+.stat-card.resolved::before {
+  background: linear-gradient(45deg, transparent 50%, rgba(47, 158, 68, 0.1) 50%);
+}
+
+.stat-card.response-time {
+  border-left-color: #6366F1;
+}
+
+.stat-card.response-time::before {
+  background: linear-gradient(45deg, transparent 50%, rgba(99, 102, 241, 0.1) 50%);
+}
+
+.stat-card-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  position: relative;
+  z-index: 1;
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  opacity: 0.8;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-number {
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-asphalt);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #6B7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: var(--space-xs);
+}
+
+/* Dashboard Controls */
+.dashboard-controls {
+  background-color: var(--color-white);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.filters-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
+  align-items: end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 160px;
+}
+
+.filter-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-asphalt);
+}
+
+.filter-select {
+  padding: var(--space-md);
+  border: 2px solid #E5E7EB;
+  border-radius: var(--border-radius);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--color-asphalt);
+  background-color: var(--color-white);
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.filter-select:focus {
+  border-color: var(--color-road-yellow);
+  outline: none;
+}
+
+.clear-filters-btn {
+  padding: var(--space-md) var(--space-lg);
+  background-color: var(--color-surface-light);
+  color: var(--color-asphalt);
+  border: 2px solid #E5E7EB;
+  border-radius: var(--border-radius);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.clear-filters-btn:hover {
+  background-color: #E5E7EB;
+  border-color: #D1D5DB;
+}
+
+/* Dashboard Main */
+.dashboard-main {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+/* Map Section */
+.map-section {
+  background-color: var(--color-white);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-md);
+  height: fit-content;
+  position: sticky;
+  top: calc(80px + var(--space-md));
+}
+
+.map-section h3 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-asphalt);
+  margin-bottom: var(--space-lg);
+  text-align: center;
+}
+
+.neighborhood-map {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: linear-gradient(45deg, #F8FAFC 25%, transparent 25%),
+              linear-gradient(-45deg, #F8FAFC 25%, transparent 25%),
+              linear-gradient(45deg, transparent 75%, #F8FAFC 75%),
+              linear-gradient(-45deg, transparent 75%, #F8FAFC 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  border-radius: var(--border-radius);
+  border: 2px solid #E5E7EB;
+}
+
+.neighborhood-zone {
+  background-color: var(--color-white);
+  border-radius: var(--border-radius);
+  padding: var(--space-md);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  border: 2px solid transparent;
+  position: relative;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.neighborhood-zone:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-road-yellow);
+}
+
+.neighborhood-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-asphalt);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.neighborhood-pins {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.map-pin {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.map-pin.alta {
+  background-color: var(--priority-alta);
+}
+
+.map-pin.media {
+  background-color: var(--priority-media);
+}
+
+.map-pin.baja {
+  background-color: var(--priority-baja);
+}
+
+.map-pin::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-bottom: 4px solid currentColor;
+}
+
+/* Reports Section */
+.reports-section {
+  background-color: var(--color-white);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-md);
+}
+
+.reports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.reports-header h3 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-asphalt);
+}
+
+.list-controls {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-surface-light);
+  color: var(--color-asphalt);
+  border: 1px solid #E5E7EB;
+  border-radius: var(--border-radius);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.control-btn:hover {
+  background-color: #E5E7EB;
+  border-color: var(--color-road-yellow);
+}
+
+/* Reports Table */
+.reports-table-container {
+  border-radius: var(--border-radius);
+  border: 1px solid #E5E7EB;
+  overflow: hidden;
+}
+
+.reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-white);
+}
+
+.reports-table th {
+  background-color: var(--color-surface-light);
+  color: var(--color-asphalt);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+  padding: var(--space-md);
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.reports-table td {
+  padding: var(--space-md);
+  border-bottom: 1px solid #F3F4F6;
+  font-size: 0.875rem;
+  color: var(--color-asphalt);
+  vertical-align: middle;
+}
+
+.reports-table tr:hover {
+  background-color: rgba(242, 183, 5, 0.05);
+}
+
+.report-photo {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--border-radius);
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.report-photo:hover {
+  transform: scale(1.1);
+}
+
+.report-photo-placeholder {
+  width: 60px;
+  height: 60px;
+  background-color: var(--color-surface-light);
+  border-radius: var(--border-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #9CA3AF;
+}
+
+.report-zone {
+  font-weight: 500;
+}
+
+.report-date {
+  font-family: var(--font-mono);
+  color: #6B7280;
+}
+
+.status-select {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid #E5E7EB;
+  border-radius: var(--border-radius);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  cursor: pointer;
+  background-color: var(--color-white);
+  transition: border-color var(--transition-fast);
+}
+
+.status-select:focus {
+  border-color: var(--color-road-yellow);
+  outline: none;
+}
+
+.action-btn {
+  padding: var(--space-sm) var(--space-md);
+  background: none;
+  border: 1px solid #E5E7EB;
+  border-radius: var(--border-radius);
+  color: var(--color-asphalt);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all var(--transition-fast);
+}
+
+.action-btn:hover {
+  background-color: var(--color-surface-light);
+  border-color: var(--color-road-yellow);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: #6B7280;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: var(--space-lg);
+  opacity: 0.5;
+}
+
+.empty-state h4 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-asphalt);
+  margin-bottom: var(--space-sm);
+}
+
+.empty-state p {
+  font-size: 1rem;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* Mobile Responsive */
+@media (max-width: 1200px) {
+  .dashboard-main {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+  
+  .map-section {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding: var(--space-lg);
+  }
+  
+  .dashboard-header h2 {
+    font-size: 2rem;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-md);
+  }
+  
+  .stat-card {
+    padding: var(--space-lg);
+  }
+  
+  .stat-number {
+    font-size: 1.75rem;
+  }
+  
+  .filters-section {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+  
+  .filter-group {
+    min-width: auto;
+  }
+  
+  .neighborhood-map {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+    padding: var(--space-md);
+  }
+  
+  .dashboard-controls,
+  .map-section,
+  .reports-section {
+    padding: var(--space-lg);
+  }
+  
+  .reports-table-container {
+    overflow-x: auto;
+  }
+  
+  .reports-table {
+    min-width: 600px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stat-card-content {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--space-sm);
+  }
+  
+  .neighborhood-map {
+    grid-template-columns: 1fr;
+  }
+  
+  .reports-header {
+    flex-direction: column;
+    gap: var(--space-md);
+    align-items: stretch;
+  }
+  
+  .dashboard-controls,
+  .map-section,
+  .reports-section {
+    padding: var(--space-md);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Task 38 — Dark Mode + Triangular Identity (Municipal Dashboard)
+ * Requirements: 11.4, 11.5, 11.7
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Priority badge — triangular road-sign motif ── */
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  position: relative;
+}
+
+/* Triangle accent via ::before — inherits color from inline style */
+.priority-badge::before {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 9px solid currentColor;
+  flex-shrink: 0;
+}
+
+/* ── Status badge — road-sign triangle left accent ── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  position: relative;
+}
+
+.status-badge::before {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 9px solid currentColor;
+  flex-shrink: 0;
+}
+
+/* Pendiente — WCAG AA: #6C757D on white ≈ 5.0:1 ✓ */
+.status-badge.pendiente {
+  background-color: rgba(108, 117, 125, 0.12);
+  color: #5A6270;
+}
+
+/* En proceso → en-proceso — WCAG AA: #0055AA on white ≈ 5.9:1 ✓ */
+.status-badge.en-proceso {
+  background-color: rgba(0, 85, 170, 0.12);
+  color: #0055AA;
+}
+
+/* Resuelto — WCAG AA: #1E7E34 on white ≈ 5.5:1 ✓ */
+.status-badge.resuelto {
+  background-color: rgba(30, 126, 52, 0.12);
+  color: #1E7E34;
+}
+
+/* ── Export CSV button — triangular left-border motif ── */
+/* The .secondary-btn class is defined in main.css; these rules layer on top */
+.action-btn.secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background-color: var(--color-surface-light);
+  color: var(--color-asphalt);
+  border: 2px solid var(--color-asphalt);
+  border-left: 4px solid var(--color-road-yellow);
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: background-color var(--transition-fast), box-shadow var(--transition-fast),
+              transform var(--transition-fast);
+}
+
+.action-btn.secondary-btn::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 7px solid var(--color-road-yellow);
+}
+
+.action-btn.secondary-btn:hover {
+  background-color: rgba(242, 183, 5, 0.08);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Dark Mode — Municipal Dashboard surfaces
+ * Requirements: 11.4, 11.5, 11.7
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* Dashboard header stays asphalt-dark in dark mode (it IS dark already) */
+html.dark-mode .dashboard-header,
+@media (prefers-color-scheme: dark) {
+  .dashboard-header {
+    background: linear-gradient(135deg, #1C1F26 0%, #14171D 100%);
+  }
+}
+
+html.dark-mode .dashboard-header p {
+  color: rgba(240, 242, 245, 0.85);
+}
+
+@media (prefers-color-scheme: dark) {
+  .dashboard-header p { color: rgba(240, 242, 245, 0.85); }
+}
+
+/* Stat cards */
+html.dark-mode .stat-card {
+  background-color: #1E2229;
+  color: #F0F2F5;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+}
+
+html.dark-mode .stat-number {
+  color: #F0F2F5;
+}
+
+html.dark-mode .stat-label {
+  color: #A0A8B5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .stat-card { background-color: #1E2229; color: #F0F2F5; }
+  .stat-number { color: #F0F2F5; }
+  .stat-label { color: #A0A8B5; }
+}
+
+/* Dashboard controls + filter panel */
+html.dark-mode .dashboard-controls {
+  background-color: #1E2229;
+}
+
+html.dark-mode .filter-label {
+  color: #F0F2F5;
+}
+
+html.dark-mode .filter-select {
+  background-color: #22262F;
+  color: #F0F2F5;
+  border-color: #3A404C;
+}
+
+html.dark-mode .clear-filters-btn {
+  background-color: #22262F;
+  color: #F0F2F5;
+  border-color: #3A404C;
+}
+
+html.dark-mode .clear-filters-btn:hover {
+  background-color: #2E333D;
+  border-color: var(--color-road-yellow);
+}
+
+@media (prefers-color-scheme: dark) {
+  .dashboard-controls { background-color: #1E2229; }
+  .filter-label { color: #F0F2F5; }
+  .filter-select { background-color: #22262F; color: #F0F2F5; border-color: #3A404C; }
+  .clear-filters-btn { background-color: #22262F; color: #F0F2F5; border-color: #3A404C; }
+  .clear-filters-btn:hover { background-color: #2E333D; border-color: var(--color-road-yellow); }
+}
+
+/* Map section */
+html.dark-mode .map-section {
+  background-color: #1E2229;
+}
+
+html.dark-mode .map-section h3 {
+  color: #F0F2F5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .map-section { background-color: #1E2229; }
+  .map-section h3 { color: #F0F2F5; }
+}
+
+/* Reports section */
+html.dark-mode .reports-section {
+  background-color: #1E2229;
+}
+
+html.dark-mode .reports-header h3 {
+  color: #F0F2F5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .reports-section { background-color: #1E2229; }
+  .reports-header h3 { color: #F0F2F5; }
+}
+
+/* Control button (Actualizar) */
+html.dark-mode .control-btn {
+  background-color: #22262F;
+  color: #F0F2F5;
+  border-color: #3A404C;
+}
+
+html.dark-mode .control-btn:hover {
+  background-color: #2E333D;
+  border-color: var(--color-road-yellow);
+}
+
+@media (prefers-color-scheme: dark) {
+  .control-btn { background-color: #22262F; color: #F0F2F5; border-color: #3A404C; }
+  .control-btn:hover { background-color: #2E333D; border-color: var(--color-road-yellow); }
+}
+
+/* Export CSV button in dark mode */
+html.dark-mode .action-btn.secondary-btn {
+  background-color: #22262F;
+  color: #F0F2F5;
+  border-color: #3A404C;
+  border-left-color: var(--color-road-yellow);
+}
+
+html.dark-mode .action-btn.secondary-btn::before {
+  border-left-color: var(--color-road-yellow);
+}
+
+html.dark-mode .action-btn.secondary-btn:hover {
+  background-color: rgba(242, 183, 5, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  .action-btn.secondary-btn {
+    background-color: #22262F;
+    color: #F0F2F5;
+    border-color: #3A404C;
+    border-left-color: var(--color-road-yellow);
+  }
+  .action-btn.secondary-btn::before { border-left-color: var(--color-road-yellow); }
+  .action-btn.secondary-btn:hover { background-color: rgba(242, 183, 5, 0.12); }
+}
+
+/* Status select in dark mode */
+html.dark-mode .status-select {
+  background-color: #22262F;
+  color: #F0F2F5;
+  border-color: #3A404C;
+}
+
+html.dark-mode .status-select:focus {
+  border-color: var(--color-road-yellow);
+}
+
+@media (prefers-color-scheme: dark) {
+  .status-select { background-color: #22262F; color: #F0F2F5; border-color: #3A404C; }
+  .status-select:focus { border-color: var(--color-road-yellow); }
+}
+
+/* Action button (view report) */
+html.dark-mode .action-btn:not(.secondary-btn) {
+  background-color: #22262F;
+  color: #F0F2F5;
+  border-color: #3A404C;
+}
+
+html.dark-mode .action-btn:not(.secondary-btn):hover {
+  background-color: #2E333D;
+  border-color: var(--color-road-yellow);
+}
+
+@media (prefers-color-scheme: dark) {
+  .action-btn:not(.secondary-btn) { background-color: #22262F; color: #F0F2F5; border-color: #3A404C; }
+  .action-btn:not(.secondary-btn):hover { background-color: #2E333D; border-color: var(--color-road-yellow); }
+}
+
+/* Empty state */
+html.dark-mode .empty-state h4 {
+  color: #F0F2F5;
+}
+
+html.dark-mode .empty-state p {
+  color: #A0A8B5;
+}
+
+html.dark-mode .municipal-empty-state {
+  background-color: transparent;
+}
+
+html.dark-mode .empty-state-cta {
+  background-color: rgba(242, 183, 5, 0.15);
+  color: #F2B705;
+  border-color: #F2B705;
+}
+
+@media (prefers-color-scheme: dark) {
+  .empty-state h4 { color: #F0F2F5; }
+  .empty-state p { color: #A0A8B5; }
+  .empty-state-cta { background-color: rgba(242, 183, 5, 0.15); color: #F2B705; border-color: #F2B705; }
+}
+
+/* Priority badge in dark mode — boost contrast */
+/* Alta: #E8590C on dark requires keeping it as-is, bg is low opacity */
+html.dark-mode .priority-badge {
+  /* Boost text legibility on dark card bg #1E2229 */
+  filter: brightness(1.15);
+}
+
+/* Status badge — WCAG AA on dark bg #1E2229 */
+html.dark-mode .status-badge.pendiente {
+  background-color: rgba(160, 168, 181, 0.15);
+  /* #B0B8C5 on #1E2229 → contrast ≈ 5.3:1 ✓ */
+  color: #B0B8C5;
+}
+
+html.dark-mode .status-badge.en-proceso {
+  background-color: rgba(96, 165, 250, 0.15);
+  /* #60A5FA on #1E2229 → contrast ≈ 5.0:1 ✓ */
+  color: #60A5FA;
+}
+
+html.dark-mode .status-badge.resuelto {
+  background-color: rgba(74, 222, 128, 0.15);
+  /* #4ADE80 on #1E2229 → contrast ≈ 5.5:1 ✓ */
+  color: #4ADE80;
+}
+
+@media (prefers-color-scheme: dark) {
+  .priority-badge { filter: brightness(1.15); }
+  .status-badge.pendiente { background-color: rgba(160, 168, 181, 0.15); color: #B0B8C5; }
+  .status-badge.en-proceso { background-color: rgba(96, 165, 250, 0.15); color: #60A5FA; }
+  .status-badge.resuelto { background-color: rgba(74, 222, 128, 0.15); color: #4ADE80; }
+}
+
+/* Zone info in table rows */
+html.dark-mode .zone-name {
+  color: #F0F2F5;
+}
+
+html.dark-mode .road-type {
+  color: #A0A8B5;
+}
+
+html.dark-mode .date-main {
+  color: #F0F2F5;
+}
+
+html.dark-mode .report-id {
+  color: #A0A8B5;
+}
+
+html.dark-mode .report-photo-placeholder {
+  background-color: #22262F;
+  color: #A0A8B5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .zone-name { color: #F0F2F5; }
+  .road-type { color: #A0A8B5; }
+  .date-main { color: #F0F2F5; }
+  .report-id { color: #A0A8B5; }
+  .report-photo-placeholder { background-color: #22262F; color: #A0A8B5; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Task 39 — Municipal Empty State + Skeleton Rows
+ * Requirements: 11.6, 11.7
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* Override generic .empty-state inside the municipal reports container */
+.municipal-empty-state {
+  display: none;                /* shown by JS when no filtered results */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl) var(--space-lg);
+  gap: var(--space-md);
+  text-align: center;
+  font-family: var(--font-body); /* Inter */
+}
+
+.municipal-empty-state.visible {
+  display: flex;
+}
+
+/* Cone illustration */
+.municipal-empty-icon {
+  opacity: 0.9;
+}
+
+.municipal-empty-state h4 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-asphalt);
+  margin: 0;
+}
+
+.municipal-empty-state p {
+  font-size: 0.875rem;
+  color: #6B7280;
+  max-width: 360px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* "Limpiar filtros" CTA */
+.empty-state-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  background-color: var(--color-surface-light);
+  color: var(--color-asphalt);
+  border: 2px solid var(--color-asphalt);
+  border-radius: var(--border-radius);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast),
+              transform var(--transition-fast);
+  margin-top: var(--space-xs);
+}
+
+.empty-state-cta:hover {
+  background-color: rgba(242, 183, 5, 0.1);
+  border-color: var(--color-road-yellow);
+  transform: translateY(-1px);
+}
+
+.empty-state-cta:focus {
+  outline: 2px solid var(--color-road-yellow);
+  outline-offset: 2px;
+}
+
+/* Dark-mode overrides */
+html.dark-mode .municipal-empty-state h4 {
+  color: #F0F2F5;
+}
+
+html.dark-mode .municipal-empty-state p {
+  color: #A0A8B5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .municipal-empty-state h4 { color: #F0F2F5; }
+  .municipal-empty-state p  { color: #A0A8B5; }
+}
