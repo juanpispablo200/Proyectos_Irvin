@@ -143,29 +143,46 @@ window.MunicipalDashboard = {
         this.render();
     },
 
-    // Refresh dashboard data
-    refreshDashboard() {
+    // Refresh dashboard data — reloads from Supabase when online, re-renders from
+    // in-memory state when offline. Shows a clear message in both cases.
+    async refreshDashboard() {
         const refreshBtn = document.getElementById('refresh-reports-btn');
         if (refreshBtn) {
             refreshBtn.disabled = true;
             refreshBtn.innerHTML = '<span aria-hidden="true">🔄</span>Actualizando...';
         }
 
-        // Simulate refresh delay
-        setTimeout(() => {
+        try {
+            if (!window.BachesLoja.state.isOffline) {
+                // Real reload from Supabase
+                const freshReports = await window.SupabaseDB.fetchReports();
+                window.BachesLoja.state.reports = freshReports;
+                console.log(`[MunicipalDashboard] Refreshed ${freshReports.length} reports from Supabase`);
+            }
+
             this.render();
 
             if (window.BachesLojaMap && window.BachesLojaMap._initialized) {
                 window.BachesLojaMap.fitBounds(window.BachesLoja.getFilteredReports());
             }
-            
+
+            this.showToast(
+                window.BachesLoja.state.isOffline
+                    ? 'Modo sin conexión — mostrando datos en memoria'
+                    : 'Dashboard actualizado desde la base de datos',
+                window.BachesLoja.state.isOffline ? 'warning' : 'success'
+            );
+        } catch (err) {
+            console.error('[MunicipalDashboard] refreshDashboard error:', err);
+            this.showToast('Error al actualizar. Mostrando datos en memoria.', 'error');
+            // Still re-render with whatever is in state
+            this.render();
+        } finally {
             if (refreshBtn) {
                 refreshBtn.disabled = false;
                 refreshBtn.innerHTML = '<span aria-hidden="true">🔄</span>Actualizar';
             }
-            
-            this.showToast('Dashboard actualizado', 'success');
-        }, 1000);
+        }
     },
 
     // Update statistics cards
@@ -525,17 +542,21 @@ window.MunicipalDashboard = {
         if (modal && modalBody) {
             modalBody.innerHTML = this.createReportDetailsHTML(report);
             modal.classList.add('active');
-            
-            // Setup modal close handlers
-            modal.addEventListener('click', (e) => {
+            modal.setAttribute('aria-hidden', 'false');
+
+            // Use { once: true } so listeners are auto-removed after firing,
+            // preventing the accumulation of duplicate handlers on each open.
+            const onBackdropClick = (e) => {
                 if (e.target === modal || e.target.matches('.modal-backdrop')) {
                     this.closeModal();
                 }
-            });
-            
-            modal.querySelector('.modal-close-btn')?.addEventListener('click', () => {
-                this.closeModal();
-            });
+            };
+            modal.addEventListener('click', onBackdropClick, { once: true });
+
+            const closeBtn = modal.querySelector('.modal-close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => this.closeModal(), { once: true });
+            }
         }
     },
 
@@ -615,6 +636,7 @@ window.MunicipalDashboard = {
         const modal = document.getElementById('report-modal');
         if (modal) {
             modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
         }
     },
 

@@ -218,8 +218,15 @@
   padding: var(--space-xl);
   box-shadow: var(--shadow-md);
   height: fit-content;
+  /* sticky only on large screens where the reports list is taller than the map */
   position: sticky;
   top: calc(80px + var(--space-md));
+}
+
+@media (max-width: 1200px) {
+  .map-section {
+    position: static;
+  }
 }
 
 .map-section h3 {

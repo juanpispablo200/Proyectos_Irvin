@@ -537,36 +537,40 @@ window.CitizenInterface = {
         }
     },
 
-    // Match neighborhood based on coordinates (simplified)
+    // Match neighborhood based on coordinates (Haversine distance to each centroid)
+    // Covers all 10 Loja neighborhoods configured in app.js
     matchNeighborhood(location) {
-        // In a real implementation, this would use reverse geocoding
-        // For demo purposes, we'll use approximate center points
         const neighborhoods = {
             'Centro Histórico': { lat: -3.9939, lng: -79.2042 },
-            'Sucre': { lat: -3.9955, lng: -79.2055 },
-            'El Valle': { lat: -3.9985, lng: -79.2078 },
-            'San Sebastián': { lat: -3.9912, lng: -79.2015 }
+            'Sucre':            { lat: -3.9955, lng: -79.2055 },
+            'El Valle':         { lat: -3.9985, lng: -79.2078 },
+            'San Sebastián':    { lat: -3.9912, lng: -79.2015 },
+            'Punzara':          { lat: -4.0012, lng: -79.2089 },
+            'Zamora Huayco':    { lat: -3.9892, lng: -79.1995 },
+            'Carigán':          { lat: -3.9860, lng: -79.2110 },
+            'Yahuarcuna':       { lat: -3.9830, lng: -79.2065 },
+            'La Argelia':       { lat: -4.0050, lng: -79.1980 },
+            'San Cayetano':     { lat: -3.9920, lng: -79.1960 }
         };
 
         let closestNeighborhood = '';
         let closestDistance = Infinity;
 
-        for (let [name, coords] of Object.entries(neighborhoods)) {
+        for (const [name, coords] of Object.entries(neighborhoods)) {
             const distance = this.calculateDistance(
                 location.lat, location.lng,
                 coords.lat, coords.lng
             );
-            
             if (distance < closestDistance) {
                 closestDistance = distance;
                 closestNeighborhood = name;
             }
         }
 
-        // Auto-select neighborhood if close enough (within ~2km)
-        if (closestDistance < 0.02) {
+        // Auto-select if within ~2 km of the closest centroid
+        if (closestDistance < 2) {
             const neighborhoodSelect = document.getElementById('neighborhood');
-            if (neighborhoodSelect) {
+            if (neighborhoodSelect && neighborhoodSelect.value !== closestNeighborhood) {
                 neighborhoodSelect.value = closestNeighborhood;
                 this.showToast(`Barrio detectado: ${closestNeighborhood}`, 'info');
             }
@@ -921,38 +925,15 @@ window.CitizenInterface = {
         `;
     },
 
-    // Show toast notification
+    // Show toast notification — delegates to BachesLoja.showToast for a single
+    // implementation and consistent styling (icons, auto-dismiss, dark-mode).
     showToast(message, type = 'info') {
-        const container = document.getElementById('toast-container') || this.createToastContainer();
-        
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.innerHTML = `
-            <div class="toast-content">
-                <span class="toast-message">${message}</span>
-                <button class="toast-close" onclick="this.parentElement.parentElement.remove()">×</button>
-            </div>
-        `;
-        
-        container.appendChild(toast);
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (toast.parentElement) {
-                toast.remove();
-            }
-        }, 5000);
-    },
-
-    // Create toast container if it doesn't exist
-    createToastContainer() {
-        const container = document.createElement('div');
-        container.id = 'toast-container';
-        container.className = 'toast-container';
-        container.setAttribute('aria-live', 'polite');
-        container.setAttribute('aria-atomic', 'true');
-        document.body.appendChild(container);
-        return container;
+        if (window.BachesLoja && typeof window.BachesLoja.showToast === 'function') {
+            window.BachesLoja.showToast(message, type);
+        } else {
+            // Fallback: BachesLoja not yet loaded (should not happen in normal flow)
+            console.warn('[CitizenInterface] BachesLoja.showToast unavailable:', message);
+        }
     },
 
     // Render citizen view
@@ -1063,7 +1044,10 @@ window.CitizenInterface = {
                     ${report.photo ? `
                         <div class="report-detail-item">
                             <label>Foto:</label>
-                            <img src="${report.photo.dataUrl}" alt="Foto del reporte" style="max-width: 100%; border-radius: 8px; margin-top: 8px;" />
+                            <img src="${typeof report.photo === 'string' ? report.photo : (report.photo.dataUrl || '')}"
+                                 alt="Foto del reporte"
+                                 style="max-width: 100%; border-radius: 8px; margin-top: 8px;"
+                                 onerror="this.style.display='none'" />
                         </div>
                     ` : ''}
                 </div>

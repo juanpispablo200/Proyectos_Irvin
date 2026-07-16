@@ -350,3 +350,63 @@
   - En `index.html` → sección `<head>`: agregar `<link rel="icon" type="image/svg+xml">` con un favicon SVG codificado como data URI — triángulo amarillo (#F2B705) con borde asfalto (#1C1F26) y símbolo `!`, coherente con la identidad visual de señalética vial de la app
   - No requiere archivo externo; el SVG inline garantiza compatibilidad sin dependencia de assets
   - _Requirements: 6.1, 6.6_
+
+- [x] 43. Corregir desconexión zone/neighborhood en el sistema de filtros
+
+  - En `app.js` → `getFilteredReports()`: aceptar tanto `state.filters.neighborhood` como `state.filters.zone` como la misma clave de filtro (MunicipalDashboard guarda en `zone`, el estado usa `neighborhood`)
+  - En `app.js` → `applyFilters()`: normalizar el campo `zone` → `neighborhood` al fusionar con `state.filters` para que ambas rutas sean equivalentes
+  - En `app.js` → `clearFilters()`: limpiar ambas claves (`neighborhood: null, zone: null`) para evitar filtros fantasma
+  - _Requirements: 5.1_
+
+- [x] 44. Ocultar el nav switcher tras el login para reforzar el modelo de roles
+
+  - Agregar método `_updateNavVisibility(role)` en `app.js`: cuando `role` es `null` (landing) o cualquier rol autenticado, oculta `.view-switcher` con `display: none`; los botones de la landing y el logout son los únicos controles de navegación tras autenticar
+  - Llamar `_updateNavVisibility(role)` al final de `onLoginSuccess(profile)` y al inicio de `handleLogout()` para restaurar el estado correcto
+  - Esto impide que un ciudadano autenticado pueda saltar manualmente al panel municipal haciendo clic en el nav
+  - _Requirements: 10.3, 10.4_
+
+- [x] 45. Unificar showToast en CitizenInterface para delegar a BachesLoja
+
+  - En `citizen-interface.js`: reemplazar la implementación propia de `showToast` (que creaba su propio DOM con estructura HTML diferente y sin íconos) por una delegación a `window.BachesLoja.showToast(message, type)`, igual que ya hace MunicipalDashboard
+  - Eliminar el método auxiliar `createToastContainer()` que ya no es necesario
+  - Agregar fallback a `console.warn` por si `BachesLoja` no está disponible aún
+  - _Requirements: 6.8_
+
+- [x] 46. Corregir bug de foto en showReportDetails del citizen
+
+  - En `citizen-interface.js` → `showReportDetails()`: reemplazar `report.photo.dataUrl` por `typeof report.photo === 'string' ? report.photo : (report.photo.dataUrl || '')` para soportar tanto URLs de Supabase Storage como objetos locales con `.dataUrl`
+  - Agregar atributo `onerror="this.style.display='none'"` al `<img>` para manejar URLs rotas sin imagen rota visible
+  - _Requirements: 8.4_
+
+- [x] 47. Cambiar generación de IDs de reportes a crypto.randomUUID()
+
+  - En `app.js` → `addReport()`: reemplazar el ID secuencial `RPT${length+1}` (que colisiona con múltiples usuarios simultáneos) por `crypto.randomUUID()` prefijado con `RPT-`
+  - Agregar fallback a `Date.now().toString(36) + Math.random().toString(36)` para entornos sin `crypto.randomUUID` disponible
+  - _Requirements: 8.1_
+
+- [x] 48. Hacer refreshDashboard que recargue datos reales desde Supabase
+
+  - En `municipal-dashboard.js` → `refreshDashboard()`: convertir el método a `async`, eliminar el `setTimeout(1000)` hardcodeado y reemplazarlo por `await SupabaseDB.fetchReports()` seguido de asignación a `window.BachesLoja.state.reports`
+  - Si el app está en modo offline (`state.isOffline`), omitir la llamada a Supabase y mostrar toast `warning` indicando que se muestran datos en memoria
+  - Manejar errores con `try/catch`: en fallo mostrar toast de error y aún así re-renderizar con los datos en memoria
+  - _Requirements: 8.2_
+
+- [x] 49. Completar los 10 barrios en matchNeighborhood con coordenadas reales
+
+  - En `citizen-interface.js` → `matchNeighborhood()`: agregar los 6 barrios faltantes (Punzara, Zamora Huayco, Carigán, Yahuarcuna, La Argelia, San Cayetano) con sus coordenadas aproximadas al centroide del barrio en Loja
+  - Corregir el umbral de detección de `0.02` (20 metros — nunca se activaba) a `2` (2 km real), que es la distancia razonable para asociar coordenadas a un barrio
+  - Agregar guard para no re-disparar el toast si el barrio seleccionado ya es el correcto (`value !== closestNeighborhood`)
+  - _Requirements: 1.4_
+
+- [x] 50. Corregir position:sticky del mapa en móvil y mover estilos inline a CSS
+
+  - En `styles/municipal.css`: agregar `@media (max-width: 1200px) { .map-section { position: static; } }` para que el mapa no quede invisible o fuera de pantalla en tablets y móviles donde el grid ya es de 1 columna
+  - En `styles/citizen.css`: mover los estilos inline del `#location-picker-map` (height, margin-top, border-radius, border, display, z-index) a una regla CSS dedicada `#location-picker-map { ... }`, con media query para reducir a 200px en móvil < 480px
+  - En `index.html`: limpiar el atributo `style="..."` del `<div id="location-picker-map">` — el elemento queda solo con id, aria-label y role
+  - _Requirements: 6.7, 9.1_
+
+- [x] 51. Corregir memory leak en viewReportDetails por addEventListener acumulativo
+
+  - En `municipal-dashboard.js` → `viewReportDetails()`: reemplazar los `addEventListener` sin opción de limpieza por listeners con `{ once: true }` para que se auto-eliminen tras la primera ejecución; evita que cada apertura del modal acumule un nuevo handler sobre los anteriores
+  - Agregar `modal.setAttribute('aria-hidden', 'false')` al abrir y `'true'` al cerrar en `closeModal()` para mantener la accesibilidad correcta
+  - _Requirements: 6.8_

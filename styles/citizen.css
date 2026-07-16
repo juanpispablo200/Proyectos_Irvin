@@ -943,6 +943,34 @@ html.dark-mode .citizen-empty-state p {
   .citizen-empty-state p  { color: #A0A8B5; }
 }
 
+/* ── Citizen location picker mini-map ── */
+/* Styles moved from inline HTML to CSS for maintainability */
+#location-picker-map {
+  height: 250px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: 2px solid var(--color-road-yellow);
+  display: none; /* shown by JS via toggleLocationPicker() */
+  z-index: 0;
+}
+
+/* ── Citizen location picker mini-map ── */
+/* Styles moved from inline HTML to CSS for maintainability */
+#location-picker-map {
+  height: 250px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: 2px solid var(--color-road-yellow);
+  display: none; /* shown by JS via toggleLocationPicker() */
+  z-index: 0;
+}
+
+@media (max-width: 480px) {
+  #location-picker-map {
+    height: 200px;
+  }
+}
+
 /* ── Skeleton cards inside reports-list ── */
 .reports-list .skeleton-card {
   margin-bottom: var(--space-md);

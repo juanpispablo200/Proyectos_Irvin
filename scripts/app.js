@@ -412,6 +412,9 @@ window.BachesLoja = {
 
         this.hideAuthModal();
 
+        // Hide the role-switcher nav so citizens can't click into the municipal view
+        this._updateNavVisibility(role);
+
         // Req 10.3 — route to correct interface
         if (role === 'admin') {
             this.switchView('municipal');
@@ -441,6 +444,9 @@ window.BachesLoja = {
         this.state.currentUser = null;
         this.state.currentRole = null;
         this.state.reports = [];
+
+        // Restore the nav switcher visibility for the landing screen
+        this._updateNavVisibility(null);
 
         // Return to landing screen
         this.switchView('landing');
@@ -639,9 +645,11 @@ window.BachesLoja = {
             );
         }
 
-        if (this.state.filters.neighborhood) {
+        // Accept both 'neighborhood' (legacy) and 'zone' (MunicipalDashboard) as the same filter
+        const neighborhoodFilter = this.state.filters.neighborhood || this.state.filters.zone;
+        if (neighborhoodFilter) {
             filteredReports = filteredReports.filter(report => 
-                report.neighborhood === this.state.filters.neighborhood
+                report.neighborhood === neighborhoodFilter
             );
         }
 
@@ -678,7 +686,11 @@ window.BachesLoja = {
             }
 
             const newReport = {
-                id: `RPT${String(this.state.reports.length + 1).padStart(3, '0')}`,
+                // Use crypto.randomUUID() for collision-free IDs across concurrent users.
+                // Falls back to a timestamp+random string in environments without crypto.
+                id: (typeof crypto !== 'undefined' && crypto.randomUUID)
+                    ? `RPT-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
+                    : `RPT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
                 timestamp: new Date(),
                 status: 'Pendiente',
                 citizenId: this.state.currentUser, // Now a UUID from auth
@@ -738,7 +750,12 @@ window.BachesLoja = {
     // Apply filters (municipal view)
     applyFilters(filters) {
         try {
-            this.state.filters = { ...this.state.filters, ...filters };
+            // Normalize: MunicipalDashboard uses 'zone', state uses 'neighborhood' — keep both in sync
+            const normalized = { ...filters };
+            if (normalized.zone !== undefined) {
+                normalized.neighborhood = normalized.zone;
+            }
+            this.state.filters = { ...this.state.filters, ...normalized };
             console.log('Filters applied:', this.state.filters);
             
             // Re-render municipal view if active
@@ -755,7 +772,8 @@ window.BachesLoja = {
         this.state.filters = {
             priority: null,
             status: null,
-            neighborhood: null
+            neighborhood: null,
+            zone: null
         };
         console.log('All filters cleared');
         
@@ -916,6 +934,32 @@ window.BachesLoja = {
             'Resuelto': '#2F9E44'     // Safety green
         };
         return colors[status] || '#1C1F26';
+    },
+
+    /**
+     * Show or hide the header nav switcher depending on whether the user is
+     * logged in and which role they have.
+     *
+     * - Not logged in (landing): hide the switcher entirely — no role buttons visible.
+     * - Logged in as 'ciudadano': hide the switcher (citizen can't jump to municipal).
+     * - Logged in as 'admin': hide the switcher (admin can't jump to citizen either).
+     *
+     * The switcher is only useful before auth; after login the logout button
+     * is the only navigation control the user needs.
+     *
+     * @param {'ciudadano'|'admin'|null} role
+     */
+    _updateNavVisibility(role) {
+        const switcher = document.querySelector('.view-switcher');
+        if (!switcher) return;
+
+        if (role === null) {
+            // Back to landing — hide switcher (landing has its own role cards)
+            switcher.style.display = 'none';
+        } else {
+            // Logged in — keep hidden; the logout button handles exit
+            switcher.style.display = 'none';
+        }
     },
 
     // ── Dark Mode — Task 38 (Req 11.4, 11.5, 11.7) ─────────────────────────
